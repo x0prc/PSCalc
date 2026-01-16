@@ -1,4 +1,3 @@
-import '../../../core/engine/number.dart';
 import '../../../core/engine/rpn_engine.dart';
 
 /// Collection of specialised operations

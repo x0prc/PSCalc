@@ -16,6 +16,12 @@ class RpnEngine {
   RpnStackState _state = RpnStackState();
   final List<RpnStackState> _history = [];
 
+  RpnStackState get state => _state;
+  
+  void set state(RpnStackState value) {
+    _state = value;
+  }
+
   /// Save current state before mutation.
   void _save() => _history.add(state.copyWith());
 

@@ -3,23 +3,27 @@ import '../domain/domain.dart';
 /// Manages the list of available domains, filtering and ordering them.
 class DomainRegistry {
   final List<Domain> _allDomains;
-  List<String> _enabledIds;
-  List<String> _order;
+  final List<String> _enabledIds;
+  late final List<String> _order;
 
   DomainRegistry({
     required List<Domain> allDomains,
     List<String>? enabledIds,
     List<String>? order,
   })  : _allDomains = allDomains,
-        _enabledIds = enabledIds ?? allDomains.map((d) => d.id).toList(),
-        _order = order ?? _enabledIds;
+        _enabledIds = enabledIds ?? allDomains.map((d) => d.id).toList() {
+    _order = order ?? List.from(_enabledIds);
+  }
 
   List<Domain> get activeDomains => _computeActive();
 
-  Domain? getDomainById(String id) => _allDomains.firstWhere(
-        (d) => d.id == id,
-    orElse: () => throw Exception('Domain $id not found'),
-  );
+  Domain getDomainById(String id) {
+    try {
+      return _allDomains.firstWhere((d) => d.id == id);
+    } catch (e) {
+      throw Exception('Domain $id not found');
+    }
+  }
 
   Domain nextDomain(String currentId) {
     final active = activeDomains;
@@ -38,7 +42,15 @@ class DomainRegistry {
   List<Domain> _computeActive() {
     return _order
         .where((id) => _enabledIds.contains(id))
-        .map((id) => _allDomains.firstWhere((d) => d.id == id))
+        .map((id) {
+          try {
+            return _allDomains.firstWhere((d) => d.id == id);
+          } catch (e) {
+            // Skip domains that don't exist in _allDomains
+            return null;
+          }
+        })
+        .whereType<Domain>()
         .toList();
   }
 

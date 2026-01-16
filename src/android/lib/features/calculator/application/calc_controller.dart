@@ -1,19 +1,21 @@
 import 'package:flutter/foundation.dart';
 import '../../../core/engine/algebraic_engine.dart';
-import '../../../core/engine/{number.dart,rpn_engine.dart,algebraic_engine.dart}';
+import '../../../core/engine/number.dart';
+import '../../../core/engine/rpn_engine.dart';
 import '../domain/domain.dart';
 import 'domain_registery.dart';
-import 'domain_registry.dart';
+
+enum InputMode { algebraic, rpn }
 
 class CalcController extends ChangeNotifier {
-  final AlgebraicEngine _algEngine = AlegbraicEngine();
+  final AlgebraicEngine _algEngine = AlgebraicEngine();
   final RpnEngine _rpnEngine = RpnEngine();
 
   // Domain State
   final DomainRegistry domainRegistry;
-  String _activeDomainId = 'basic';
+  final String _activeDomainId = 'basic';
 
-  InputMode _inputMode = InputMode.algebraic;
+  final InputMode _inputMode = InputMode.algebraic;
   String _display = '0';
   String _expression = '';
   String _currentEntry = '';
@@ -31,3 +33,4 @@ class CalcController extends ChangeNotifier {
   String get error => _error;
   bool get hasError => _error.isNotEmpty;
 }
+

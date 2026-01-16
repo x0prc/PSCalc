@@ -1,4 +1,5 @@
 import '../../../core/engine/rpn_engine.dart';
+import '../../../core/engine/number.dart';
 import 'domain.dart';
 
 class BasicDomain implements Domain {
