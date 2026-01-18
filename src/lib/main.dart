@@ -18,6 +18,7 @@ class PSCalcApp extends StatelessWidget {
       create: (_) => CalcController(allDomains: [
         BasicDomain(),
         CurrencyDomain(),
+        BusinessDomain(),
       ]),
       child: MaterialApp(
         title: 'PSCalc',
