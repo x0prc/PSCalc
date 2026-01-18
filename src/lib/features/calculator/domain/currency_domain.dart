@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:decimal/decimal.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/engine/number.dart';
 import '../../../core/engine/rpn_engine.dart';
@@ -79,7 +80,7 @@ class CurrencyConvertOp implements DomainOperation {
     final rate = CurrencyRates.rateFor(fromCode);
     if (rate == Decimal.zero) throw Exception('Unknown: $fromCode');
 
-    newStack.add(CalcNumber(amount / rate));
+    newStack.add(CalcNumber((amount / rate).toDecimal()));
     return state.copyWith(stack: newStack);
   }
 }
@@ -108,7 +109,7 @@ class CrossRateOp implements DomainOperation {
       throw Exception('Unknown: $numCode/$denomCode');
     }
 
-    newStack.add(CalcNumber(numRate / denomRate));
+    newStack.add(CalcNumber((numRate / denomRate).toDecimal()));
     return state.copyWith(stack: newStack);
   }
 }
