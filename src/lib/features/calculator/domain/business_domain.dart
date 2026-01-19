@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import '../../../core/engine/number.dart';
 import '../../../core/engine/rpn_engine.dart';
 import 'domain.dart';
@@ -19,7 +20,7 @@ class BusinessDomain implements Domain {
         MarkupOp(),
         BreakEvenOp(),
         ProfitMarginOp(),
-    ]
+    ];
 }
 
 class DiscountAmountOp implements DomainOperation {
@@ -30,8 +31,10 @@ class DiscountAmountOp implements DomainOperation {
   RpnStackState execute(RpnStackState state) {
     final newStack = List<CalcNumber>.from(state.stack);
     final amount = newStack.removeLast().value;
-    final rate = newStack.removeLast().value / Decimal.fromInt(100);
-    newStack.add(CalcNumber(amount * rate));
+    final rateRational = newStack.removeLast().value / Decimal.fromInt(100);
+    final rateDecimal = Decimal.parse(rateRational.toString());
+    final result = amount * rateDecimal;
+    newStack.add(CalcNumber(result));
     return state.copyWith(stack: newStack);
   }
 }
@@ -45,8 +48,9 @@ class SellingPriceOp implements DomainOperation {
     final newStack = List<CalcNumber>.from(state.stack);
     final cost = newStack.removeLast().value;
     final marginPct = newStack.removeLast().value / Decimal.fromInt(100);
-    final price = cost / (Decimal.one - marginPct);
-    newStack.add(CalcNumber(price));
+    final denominator = Decimal.one - Decimal.parse(marginPct.toString());
+    final price = cost / denominator;
+    newStack.add(CalcNumber(Decimal.parse(price.toString())));
     return state.copyWith(stack: newStack);
   }
 }
@@ -60,7 +64,8 @@ class MarkupOp implements DomainOperation {
     final newStack = List<CalcNumber>.from(state.stack);
     final cost = newStack.removeLast().value;
     final selling = newStack.removeLast().value;
-    final markup = ((selling - cost) / cost) * Decimal.fromInt(100);
+    final ratio = (selling - cost) / cost;
+    final markup = Decimal.parse(ratio.toString()) * Decimal.fromInt(100);
     newStack.add(CalcNumber(markup));
     return state.copyWith(stack: newStack);
   }
@@ -77,7 +82,7 @@ class BreakEvenOp implements DomainOperation {
     final fixedCosts = newStack.removeLast().value;
     if (marginPerUnit == Decimal.zero) throw CalcError.divideByZero();
     final units = fixedCosts / marginPerUnit;
-    newStack.add(CalcNumber(units));
+    newStack.add(CalcNumber(Decimal.parse(units.toString())));
     return state.copyWith(stack: newStack);
   }
 }
@@ -91,7 +96,8 @@ class ProfitMarginOp implements DomainOperation {
     final newStack = List<CalcNumber>.from(state.stack);
     final cost = newStack.removeLast().value;
     final revenue = newStack.removeLast().value;
-    final margin = ((revenue - cost) / revenue) * Decimal.fromInt(100);
+    final ratio = (revenue - cost) / revenue;
+    final margin = Decimal.parse(ratio.toString()) * Decimal.fromInt(100);
     newStack.add(CalcNumber(margin));
     return state.copyWith(stack: newStack);
   }
