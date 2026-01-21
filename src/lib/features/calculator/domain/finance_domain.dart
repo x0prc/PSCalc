@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'package:decimal/decimal.dart';
 import '../../../core/engine/number.dart';
 import '../../../core/engine/rpn_engine.dart';
 import 'domain.dart';
@@ -32,14 +34,14 @@ class EmiOp implements DomainOperation {
   @override
   RpnStackState execute(RpnStackState state) {
     final newStack = List<CalcNumber>.from(state.stack);
-    final years = newStack.removeLast().value.toInt() * 12; // months
-    final annualRate = newStack.removeLast().value / Decimal.fromInt(100);
+    final years = newStack.removeLast().value.toDouble().toInt() * 12; // months
+    final annualRate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
     final principal = newStack.removeLast().value;
     
-    final monthlyRate = annualRate / Decimal.fromInt(12);
+    final monthlyRate = (annualRate / Decimal.fromInt(12)).toDecimal();
     final power = pow(1 + monthlyRate.toDouble(), years.toDouble());
-    final emi = principal * monthlyRate * Decimal.parse(power.toString()) /
-                (Decimal.parse(power.toString()) - Decimal.one);
+    final emi = (principal * monthlyRate * Decimal.parse(power.toString()) /
+                (Decimal.parse(power.toString()) - Decimal.one)).toDecimal();
     
     newStack.add(CalcNumber(emi));
     return state.copyWith(stack: newStack);
@@ -57,12 +59,12 @@ class NpvOp implements DomainOperation {
   RpnStackState execute(RpnStackState state) {
     if (state.stack.length < 2) throw Exception('Need rate + cashflows');
     final newStack = List<CalcNumber>.from(state.stack);
-    final rate = newStack.removeLast().value / Decimal.fromInt(100);
+    final rate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
     
     Decimal npv = Decimal.zero;
     while (newStack.isNotEmpty) {
       final cf = newStack.removeLast().value;
-      npv += cf / pow(1 + rate.toDouble(), newStack.length.toDouble() + 1);
+      npv = npv + (cf / Decimal.parse(pow(1 + rate.toDouble(), newStack.length.toDouble() + 1).toString())).toDecimal();
     }
     
     newStack.add(CalcNumber(npv));
@@ -82,7 +84,8 @@ class RoiOp implements DomainOperation {
     final newStack = List<CalcNumber>.from(state.stack);
     final investment = newStack.removeLast().value;
     final gain = newStack.removeLast().value;
-    final roi = (gain / investment) * Decimal.fromInt(100);
+    final ratio = (gain / investment).toDecimal();
+    final roi = ratio * Decimal.fromInt(100);
     newStack.add(CalcNumber(roi));
     return state.copyWith(stack: newStack);
   }
@@ -98,8 +101,8 @@ class FutureValueOp implements DomainOperation {
   @override
   RpnStackState execute(RpnStackState state) {
     final newStack = List<CalcNumber>.from(state.stack);
-    final periods = newStack.removeLast().value.toInt();
-    final rate = newStack.removeLast().value / Decimal.fromInt(100);
+    final periods = newStack.removeLast().value.toDouble().toInt();
+    final rate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
     final pmt = newStack.removeLast().value;
     
     Decimal fv = Decimal.zero;
@@ -121,13 +124,13 @@ class AnnuityPmtOp implements DomainOperation {
   @override
   RpnStackState execute(RpnStackState state) {
     final newStack = List<CalcNumber>.from(state.stack);
-    final periods = newStack.removeLast().value.toInt();
-    final rate = newStack.removeLast().value / Decimal.fromInt(100);
+    final periods = newStack.removeLast().value.toDouble().toInt();
+    final rate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
     final pv = newStack.removeLast().value;
     
     final power = pow(1 + rate.toDouble(), periods.toDouble());
-    final pmt = pv * rate * Decimal.parse(power.toString()) /
-                (Decimal.parse(power.toString()) - Decimal.one);
+    final pmt = (pv * rate * Decimal.parse(power.toString()) /
+                (Decimal.parse(power.toString()) - Decimal.one)).toDecimal();
     
     newStack.add(CalcNumber(pmt));
     return state.copyWith(stack: newStack);
