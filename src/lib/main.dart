@@ -8,6 +8,7 @@ import 'features/calculator/domain/finance_domain.dart';
 import 'features/calculator/domain/fx_domain.dart';
 import 'features/calculator/domain/realestate_domain.dart';
 import 'features/calculator/presentation/calc_screen.dart';
+import 'features/calculator/domain/investments.dart';
 
 void main() {
   runApp(const PSCalcApp());
@@ -26,6 +27,7 @@ class PSCalcApp extends StatelessWidget {
         FinanceDomain(),
         FxDomain(),
         RealEstateDomain(),
+        InvestmentDomain(),
       ]),
       child: MaterialApp(
         title: 'PSCalc',
