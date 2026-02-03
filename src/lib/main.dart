@@ -3,12 +3,17 @@ import 'package:provider/provider.dart';
 import 'features/calculator/application/calc_controller.dart';
 import 'features/calculator/domain/basic_domain.dart';
 import 'features/calculator/domain/business_domain.dart';
-import 'features/calculator/domain/currency_domain.dart';
 import 'features/calculator/domain/finance_domain.dart';
 import 'features/calculator/domain/fx_domain.dart';
-import 'features/calculator/domain/realestate_domain.dart';
+import 'features/calculator/domain/real_estate_domain.dart';
+import 'features/calculator/domain/investment_domain.dart';
+import 'features/calculator/domain/date_domain.dart';
+import 'features/calculator/domain/cs_domain.dart';
+import 'features/calculator/domain/nav_domain.dart';
+import 'features/calculator/domain/jewellery_domain.dart';
+import 'features/calculator/domain/construction_domain.dart';
+import 'features/calculator/domain/trekking_domain.dart';
 import 'features/calculator/presentation/calc_screen.dart';
-import 'features/calculator/domain/investments.dart';
 
 void main() {
   runApp(const PSCalcApp());
@@ -20,19 +25,33 @@ class PSCalcApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => CalcController(allDomains: [
+      create: (_) => CalculatorController(allDomains: [
+        // CORE DOMAINS
         BasicDomain(),
-        CurrencyDomain(),
         BusinessDomain(),
         FinanceDomain(),
         FxDomain(),
         RealEstateDomain(),
         InvestmentDomain(),
+        DateDomain(),
+
+        // SPECIALIZED
+        CsDomain(),
+        NavDomain(),
+        JewelleryDomain(),
+        ConstructionDomain(),
+        TrekkingDomain(),
       ]),
       child: MaterialApp(
         title: 'PSCalc',
-        theme: ThemeData.dark().copyWith(useMaterial3: true),
-        home: const CalcScreen(),
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.orange,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        ),
+        home: const CalculatorScreen(),
       ),
     );
   }
