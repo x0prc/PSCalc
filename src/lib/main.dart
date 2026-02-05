@@ -51,7 +51,7 @@ class PSCalcApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
-        home: const CalculatorScreen(),
+        home: const CalcScreen(),
       ),
     );
   }
