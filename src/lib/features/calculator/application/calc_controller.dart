@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
-import '../../domain/domain.dart';
+import 'package:decimal/decimal.dart';
+import '../domain/domain.dart';
 import '../../../core/engine/number.dart';
 import '../../../core/engine/rpn_engine.dart';
 
@@ -23,7 +24,8 @@ class CalcController extends ChangeNotifier {
 
   // INPUT HANDLING
   void digit(String d) {
-    if (_inputBuffer.length < 16) { // Prevent overflow
+    if (_inputBuffer.length < 16) {
+      // Prevent overflow
       _inputBuffer += d;
       notifyListeners();
     }
@@ -92,20 +94,29 @@ class CalcController extends ChangeNotifier {
   // CORE EXECUTION
   void _executePending() {
     if (_pendingOp != null && _stack.length >= 2) {
+      final b = _stack.removeLast();
+      final a = _stack.removeLast();
       try {
-        final b = _stack.removeLast();
-        final a = _stack.removeLast();
         Decimal result;
 
         switch (_pendingOp!) {
-          case '+': result = a.value + b.value; break;
-          case '−': result = a.value - b.value; break;
-          case '×': result = a.value * b.value; break;
+          case '+':
+            result = a.value + b.value;
+            break;
+          case '−':
+            result = a.value - b.value;
+            break;
+          case '×':
+            result = a.value * b.value;
+            break;
           case '÷':
             if (b.value == Decimal.zero) throw CalcError.divideByZero();
-            result = a.value / b.value;
+            result = (a.value / b.value).toDecimal();
             break;
-          default: return;
+          default:
+            _stack.add(a);
+            _stack.add(b);
+            return;
         }
 
         _stack.add(CalcNumber(result));
@@ -118,14 +129,59 @@ class CalcController extends ChangeNotifier {
     }
   }
 
-  // DOMAIN EXECUTION
+  // STACK OPERATIONS
+  void rollDown() {
+    if (_stack.length >= 2) {
+      final x = _stack.removeLast();
+      _stack.insert(_stack.length - 1, x);
+      notifyListeners();
+    }
+  }
+
+  void dup() {
+    if (_stack.isNotEmpty) {
+      final x = _stack.last;
+      _stack.add(x);
+      notifyListeners();
+    }
+  }
+
+  void swap() {
+    if (_stack.length >= 2) {
+      final y = _stack.removeLast();
+      final x = _stack.removeLast();
+      _stack.add(x);
+      _stack.add(y);
+      notifyListeners();
+    }
+  }
+
+  // CONSTANTS
+  void constant(String constName) {
+    switch (constName) {
+      case 'pi':
+        _stack.add(CalcNumber(Decimal.parse('3.14159265358979323846')));
+        break;
+      case 'e':
+        _stack.add(CalcNumber(Decimal.parse('2.71828182845904523536')));
+        break;
+    }
+    notifyListeners();
+  }
+
+  void constantsMenu() {
+    constant('pi');
+  }
+
   void executeDomainOp(DomainOperation op) {
-    enter(); // Final ENTER before domain op
+    enter(); // Finalize input
     try {
-      final newState = op.execute(RpnStackState(stack: _stack));
-      _stack = newState.stack;
+      final currentState = RpnStackState(stack: _stack);
+      final result = op.execute(currentState);
+      _stack = result.stack;
       notifyListeners();
     } catch (e) {
+      debugPrint('Domain op error: $e');
     }
   }
 }
