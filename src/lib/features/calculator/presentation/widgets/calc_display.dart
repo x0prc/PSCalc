@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../application/calc_controller.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../application/calculator_controller.dart';
 
 class CalcDisplay extends StatelessWidget {
   final CalcController controller;
@@ -9,56 +11,114 @@ class CalcDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      padding: const EdgeInsets.all(24),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Domain label
-          Text(
-            controller.currentDomain.name,
-            style: const TextStyle(
-              color: Colors.orange,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          // DOMAIN LABEL
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.purple.shade800,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              controller.currentDomain.shortLabel,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          // Stack display
-          Expanded(
-            child: ListView.builder(
-              reverse: true,
-              itemCount: controller.stack.length,
-              itemBuilder: (context, index) {
-                final reverseIndex = controller.stack.length - 1 - index;
-                final item = controller.stack[reverseIndex];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                    '${reverseIndex + 1}: ${item.value.toStringAsFixed(4)}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
-                    textAlign: TextAlign.right,
-                  ),
-                );
-              },
+
+          const Spacer(),
+
+          // MAIN DISPLAY (X register)
+          if (controller.inputBuffer.isNotEmpty)
+            Text(
+              _formatIndian(controller.inputBuffer),
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.w300,
+                color: Colors.grey.shade300,
+                height: 1.1,
+              ),
+              textAlign: TextAlign.end,
             ),
-          ),
-          const SizedBox(height: 8),
-          // Input buffer
+
+          // STACK X (primary)
           Text(
-            controller.inputBuffer.isEmpty ? '0' : controller.inputBuffer,
+            _formatStackItem(controller.stack.isNotEmpty ? controller.stack.last : CalcNumber.zero()),
             style: const TextStyle(
+              fontSize: 64,
+              fontWeight: FontWeight.w400,
               color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+              height: 1.1,
             ),
+            textAlign: TextAlign.end,
           ),
+
+          const SizedBox(height: 8),
+
+          // STACK PREVIEW (Y Z T)
+          if (controller.stack.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: controller.stack.reversed.take(4).skip(1).map((item) =>
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        _formatStackItem(item, compact: true),
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    )
+                ).toList(),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  String _formatIndian(String input) {
+    try {
+      final num = double.parse(input);
+      if (num == 0) return '0';
+
+      // Indian lakh/crore (en_IN)
+      final format = NumberFormat.currency(
+        locale: 'en_IN',
+        symbol: '',
+        decimalDigits: input.contains('.') ? input.split('.').last.length : 0,
+      );
+      return format.format(num).replaceAll('₹', '').trim();
+    } catch (e) {
+      return input;
+    }
+  }
+
+  String _formatStackItem(CalcNumber item, {bool compact = false}) {
+    try {
+      final value = item.value.toDouble();
+      if (value == 0) return '0';
+
+      if (compact && value.abs() > 1000) {
+        return NumberFormat.compact(locale: 'en_IN').format(value);
+      }
+
+      final format = NumberFormat.decimalPattern('en_IN');
+      return format.format(value);
+    } catch (e) {
+      return item.toString();
+    }
   }
 }
