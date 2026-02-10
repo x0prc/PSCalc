@@ -19,8 +19,8 @@ class CalcController extends ChangeNotifier {
   Domain get currentDomain => _allDomains[_currentDomainIndex];
   bool get showHistory => _showHistory;
   List<DomainOperation> get currentOperations => currentDomain.operations;
-  CalcNumber xRegister => stack.isNotEmpty ? stack.last : CalcNumber.zero();
-
+  CalcNumber get xRegister =>
+      stack.isNotEmpty ? stack.last : CalcNumber(Decimal.zero);
 
   CalcController({required List<Domain> allDomains}) : _allDomains = allDomains;
 

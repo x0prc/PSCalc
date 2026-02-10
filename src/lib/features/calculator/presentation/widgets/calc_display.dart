@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../application/calculator_controller.dart';
+import 'package:decimal/decimal.dart';
+import '../../application/calc_controller.dart';
+import '../../../../core/engine/number.dart';
 
 class CalcDisplay extends StatelessWidget {
   final CalcController controller;
@@ -51,7 +53,11 @@ class CalcDisplay extends StatelessWidget {
 
           // STACK X (primary)
           Text(
-            _formatStackItem(controller.stack.isNotEmpty ? controller.stack.last : CalcNumber.zero()),
+            _formatStackItem(
+              controller.stack.isNotEmpty
+                  ? controller.stack.last
+                  : CalcNumber(Decimal.zero),
+            ),
             style: const TextStyle(
               fontSize: 64,
               fontWeight: FontWeight.w400,
@@ -69,19 +75,23 @@ class CalcDisplay extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: controller.stack.reversed.take(4).skip(1).map((item) =>
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Text(
-                        _formatStackItem(item, compact: true),
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.grey.shade400,
-                          fontWeight: FontWeight.w300,
+                children: controller.stack.reversed
+                    .take(4)
+                    .skip(1)
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          _formatStackItem(item, compact: true),
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.grey.shade400,
+                            fontWeight: FontWeight.w300,
+                          ),
                         ),
                       ),
                     )
-                ).toList(),
+                    .toList(),
               ),
             ),
         ],
