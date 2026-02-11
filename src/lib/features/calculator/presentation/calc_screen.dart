@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../application/calc_controller.dart';
 import 'widgets/calc_display.dart';
-import '../../../shared/widgets/calc_button.dart';
+import 'widgets/calc_button.dart';
 
 class CalcScreen extends StatefulWidget {
   const CalcScreen({super.key});
@@ -11,186 +11,192 @@ class CalcScreen extends StatefulWidget {
   State<CalcScreen> createState() => _CalcScreenState();
 }
 
-class _CalcScreenState extends State<CalcScreen> {
+class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
+  late AnimationController _pressController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Consumer<CalcController>(
         builder: (context, controller, child) {
-          return GestureDetector(
-            onHorizontalDragEnd: (details) {
-              final velocity = details.primaryVelocity!;
-              if (velocity.abs() > 500) {
-                velocity > 0
-                    ? controller.previousDomain()
-                    : controller.nextDomain();
-              }
-            },
-            onLongPress: () => controller.constantsMenu(), // π e menu
+          return SafeArea(
             child: Column(
               children: [
-                // DISPLAY
+                // DISPLAY (25% height)
                 Expanded(flex: 3, child: CalcDisplay(controller)),
 
-                // MAIN DIGIT PAD (4x5)
+                // MAIN KEYPAD (5x4 = 20 fixed buttons)
                 Expanded(
-                  flex: 4,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: GridView.count(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
+                  flex: 5,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
                       children: [
-                        // 7 8 9 ÷
-                        CalcButton(
-                          label: '7',
-                          onTap: () => controller.digit('7'),
-                        ),
-                        CalcButton(
-                          label: '8',
-                          onTap: () => controller.digit('8'),
-                        ),
-                        CalcButton(
-                          label: '9',
-                          onTap: () => controller.digit('9'),
-                        ),
-                        CalcButton(
-                          label: '÷',
-                          color: Colors.orange,
-                          onTap: () => controller.operation('÷'),
-                        ),
+                        // ROW 1: 7 8 9 ÷
+                        _buildButtonRow([
+                          _ButtonConfig(
+                            label: '7',
+                            onTap: () => controller.digit('7'),
+                          ),
+                          _ButtonConfig(
+                            label: '8',
+                            onTap: () => controller.digit('8'),
+                          ),
+                          _ButtonConfig(
+                            label: '9',
+                            onTap: () => controller.digit('9'),
+                          ),
+                          _ButtonConfig(
+                            label: '÷',
+                            color: Colors.orange,
+                            onTap: () => controller.operation('÷'),
+                          ),
+                        ]),
 
-                        // 4 5 6 ×
-                        CalcButton(
-                          label: '4',
-                          onTap: () => controller.digit('4'),
-                        ),
-                        CalcButton(
-                          label: '5',
-                          onTap: () => controller.digit('5'),
-                        ),
-                        CalcButton(
-                          label: '6',
-                          onTap: () => controller.digit('6'),
-                        ),
-                        CalcButton(
-                          label: '×',
-                          color: Colors.orange,
-                          onTap: () => controller.operation('×'),
-                        ),
+                        const SizedBox(height: 8),
 
-                        // 1 2 3 −
-                        CalcButton(
-                          label: '1',
-                          onTap: () => controller.digit('1'),
-                        ),
-                        CalcButton(
-                          label: '2',
-                          onTap: () => controller.digit('2'),
-                        ),
-                        CalcButton(
-                          label: '3',
-                          onTap: () => controller.digit('3'),
-                        ),
-                        CalcButton(
-                          label: '−',
-                          color: Colors.orange,
-                          onTap: () => controller.operation('−'),
-                        ),
+                        // ROW 2: 4 5 6 ×
+                        _buildButtonRow([
+                          _ButtonConfig(
+                            label: '4',
+                            onTap: () => controller.digit('4'),
+                          ),
+                          _ButtonConfig(
+                            label: '5',
+                            onTap: () => controller.digit('5'),
+                          ),
+                          _ButtonConfig(
+                            label: '6',
+                            onTap: () => controller.digit('6'),
+                          ),
+                          _ButtonConfig(
+                            label: '×',
+                            color: Colors.orange,
+                            onTap: () => controller.operation('×'),
+                          ),
+                        ]),
 
-                        // 0 . ENTER +
-                        CalcButton(
-                          label: '0',
-                          flex: 2,
-                          onTap: () => controller.digit('0'),
-                        ),
-                        CalcButton(
-                          label: '.',
-                          onTap: () => controller.decimalPoint(),
-                        ),
-                        CalcButton(
-                          label: '⏎',
-                          color: Colors.green.shade600,
-                          onTap: controller.enter,
-                          fontSize: 20,
-                        ),
-                        CalcButton(
-                          label: '+',
-                          color: Colors.orange,
-                          onTap: () => controller.operation('+'),
-                        ),
+                        const SizedBox(height: 8),
 
-                        // STACK + DOMAIN
-                        CalcButton(
-                          label: 'R↓',
-                          color: Colors.blue.shade600,
-                          onTap: controller.rollDown,
-                        ),
-                        CalcButton(
-                          label: 'DUP',
-                          color: Colors.blue.shade500,
-                          onTap: controller.dup,
-                        ),
-                        CalcButton(
-                          label: 'SWP',
-                          color: Colors.blue.shade500,
-                          onTap: controller.swap,
-                        ),
-                        CalcButton(
-                          label: controller.currentDomain.shortLabel,
-                          color: Colors.purple,
-                          onTap: controller.cycleDomain,
-                        ),
+                        // ROW 3: 1 2 3 −
+                        _buildButtonRow([
+                          _ButtonConfig(
+                            label: '1',
+                            onTap: () => controller.digit('1'),
+                          ),
+                          _ButtonConfig(
+                            label: '2',
+                            onTap: () => controller.digit('2'),
+                          ),
+                          _ButtonConfig(
+                            label: '3',
+                            onTap: () => controller.digit('3'),
+                          ),
+                          _ButtonConfig(
+                            label: '−',
+                            color: Colors.orange,
+                            onTap: () => controller.operation('−'),
+                          ),
+                        ]),
 
-                        // CONTROL
-                        CalcButton(
-                          label: 'CLR',
-                          color: Colors.red.shade600,
-                          onTap: controller.clearAll,
-                        ),
-                        CalcButton(
-                          label: '⌫',
-                          color: Colors.red.shade400,
-                          onTap: controller.backspace,
-                        ),
-                        CalcButton(
-                          label: 'π',
-                          color: Colors.indigo,
-                          onTap: () => controller.constant('pi'),
-                        ),
-                        CalcButton(
-                          label: 'e',
-                          color: Colors.indigo,
-                          onTap: () => controller.constant('e'),
-                        ),
+                        const SizedBox(height: 8),
+
+                        // ROW 4: 0 . ENTER +
+                        _buildButtonRow([
+                          _ButtonConfig(
+                            label: '0',
+                            color: Colors.grey.shade700,
+                            onTap: () => controller.digit('0'),
+                            flex: 2,
+                          ),
+                          _ButtonConfig(
+                            label: '.',
+                            color: Colors.grey.shade700,
+                            onTap: controller.decimalPoint,
+                          ),
+                          _ButtonConfig(
+                            label: '⏎',
+                            color: Colors.green.shade600,
+                            onTap: controller.enter,
+                            fontSize: 20,
+                          ),
+                          _ButtonConfig(
+                            label: '+',
+                            color: Colors.orange,
+                            onTap: () => controller.operation('+'),
+                          ),
+                        ]),
+
+                        const SizedBox(height: 8),
+
+                        // ROW 5: STACK + CONTROL + DOMAIN
+                        _buildButtonRow([
+                          _ButtonConfig(
+                            label: 'R↓',
+                            color: Colors.blue.shade700,
+                            onTap: controller.rollDown,
+                          ),
+                          _ButtonConfig(
+                            label: 'CLR',
+                            color: Colors.red.shade700,
+                            onTap: controller.clearAll,
+                          ),
+                          _ButtonConfig(
+                            label: controller.currentDomain.shortLabel,
+                            color: Colors.purple.shade700,
+                            onTap: controller.cycleDomain,
+                          ),
+                          _ButtonConfig(
+                            label: '≡',
+                            color: Colors.grey.shade800,
+                            onTap: controller.toggleHistory,
+                          ),
+                        ]),
                       ],
                     ),
                   ),
                 ),
 
-                // DOMAIN OPERATIONS (Dynamic 2x4 grid)
+                // DOMAIN OPS (scrollable if >8)
                 if (controller.currentOperations.isNotEmpty)
-                  Container(
-                    height: 120,
-                    padding: const EdgeInsets.all(8),
-                    child: GridView.count(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 6,
-                      children: controller.currentOperations
-                          .take(8)
-                          .map(
-                            (op) => SizedBox(
-                              height: 28,
-                              child: CalcButton(
-                                label: op.label,
-                                fontSize: 12,
-                                onTap: () => controller.executeDomainOp(op),
-                              ),
-                            ),
-                          )
-                          .toList(),
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: controller.currentOperations.length,
+                      itemBuilder: (context, index) {
+                        final op = controller.currentOperations[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: CalcButton(
+                            label: op.label,
+                            size: 70,
+                            fontSize: 12,
+                            onTap: () => controller.executeDomainOp(op),
+                          ),
+                        );
+                      },
                     ),
                   ),
               ],
@@ -200,4 +206,43 @@ class _CalcScreenState extends State<CalcScreen> {
       ),
     );
   }
+
+  Widget _buildButtonRow(List<_ButtonConfig> configs) {
+    return Expanded(
+      child: Row(
+        children: configs
+            .map(
+              (config) => Expanded(
+                flex: config.flex ?? 1,
+                child: CalcButton(
+                  label: config.label,
+                  color: config.color,
+                  fontSize: config.fontSize ?? 24,
+                  onTap: config.onTap,
+                  onLongPress: config.onLongPress,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _ButtonConfig {
+  final String label;
+  final Color? color;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final double? fontSize;
+  final int? flex;
+
+  const _ButtonConfig({
+    required this.label,
+    this.onTap,
+    this.color,
+    this.onLongPress,
+    this.fontSize,
+    this.flex,
+  });
 }
