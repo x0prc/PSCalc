@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:decimal/decimal.dart';
 import '../../application/calc_controller.dart';
 import '../../../../core/engine/number.dart';
@@ -27,7 +27,7 @@ class CalcDisplay extends StatelessWidget {
             ),
             child: Text(
               controller.currentDomain.shortLabel,
-              style: TextStyle(
+              style: GoogleFonts.robotoCondensed(
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -42,11 +42,12 @@ class CalcDisplay extends StatelessWidget {
           if (controller.inputBuffer.isNotEmpty)
             Text(
               _formatIndian(controller.inputBuffer),
-              style: TextStyle(
+              style: GoogleFonts.jetBrainsMono(
                 fontSize: 48,
                 fontWeight: FontWeight.w300,
                 color: Colors.grey.shade300,
                 height: 1.1,
+                letterSpacing: 0.5,
               ),
               textAlign: TextAlign.end,
             ),
@@ -58,11 +59,12 @@ class CalcDisplay extends StatelessWidget {
                   ? controller.stack.last
                   : CalcNumber(Decimal.zero),
             ),
-            style: const TextStyle(
+            style: GoogleFonts.jetBrainsMono(
               fontSize: 64,
               fontWeight: FontWeight.w400,
               color: Colors.white,
               height: 1.1,
+              letterSpacing: 0.5,
             ),
             textAlign: TextAlign.end,
           ),
@@ -83,10 +85,11 @@ class CalcDisplay extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 4),
                         child: Text(
                           _formatStackItem(item, compact: true),
-                          style: TextStyle(
+                          style: GoogleFonts.jetBrainsMono(
                             fontSize: 20,
                             color: Colors.grey.shade400,
                             fontWeight: FontWeight.w300,
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ),

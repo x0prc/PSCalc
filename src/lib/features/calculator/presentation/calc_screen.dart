@@ -35,8 +35,23 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // Responsive calculations based on screen size
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final isSmallScreen = screenWidth < 360 || screenHeight < 700;
+    final isTinyScreen = screenWidth < 320 || screenHeight < 600;
+
+    // Adjust spacing and sizes based on screen dimensions
+    final horizontalPadding = isTinyScreen ? 6.0 : (isSmallScreen ? 8.0 : 12.0);
+    final verticalSpacing = isTinyScreen ? 4.0 : (isSmallScreen ? 6.0 : 8.0);
+    final domainOpsHeight =
+        isTinyScreen ? 70.0 : (isSmallScreen ? 80.0 : 100.0);
+    final domainButtonSize =
+        isTinyScreen ? 55.0 : (isSmallScreen ? 62.0 : 70.0);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF1A1A1A),
       body: Consumer<CalcController>(
         builder: (context, controller, child) {
           return SafeArea(
@@ -49,7 +64,7 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
                 Expanded(
                   flex: 5,
                   child: Padding(
-                    padding: const EdgeInsets.all(12.0),
+                    padding: EdgeInsets.all(horizontalPadding),
                     child: Column(
                       children: [
                         // ROW 1: 7 8 9 ÷
@@ -68,12 +83,12 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
                           ),
                           _ButtonConfig(
                             label: '÷',
-                            color: Colors.orange,
+                            color: Colors.orange.shade700,
                             onTap: () => controller.operation('÷'),
                           ),
                         ]),
 
-                        const SizedBox(height: 8),
+                        SizedBox(height: verticalSpacing),
 
                         // ROW 2: 4 5 6 ×
                         _buildButtonRow([
@@ -91,12 +106,12 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
                           ),
                           _ButtonConfig(
                             label: '×',
-                            color: Colors.orange,
+                            color: Colors.orange.shade700,
                             onTap: () => controller.operation('×'),
                           ),
                         ]),
 
-                        const SizedBox(height: 8),
+                        SizedBox(height: verticalSpacing),
 
                         // ROW 3: 1 2 3 −
                         _buildButtonRow([
@@ -114,40 +129,40 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
                           ),
                           _ButtonConfig(
                             label: '−',
-                            color: Colors.orange,
+                            color: Colors.orange.shade700,
                             onTap: () => controller.operation('−'),
                           ),
                         ]),
 
-                        const SizedBox(height: 8),
+                        SizedBox(height: verticalSpacing),
 
                         // ROW 4: 0 . ENTER +
                         _buildButtonRow([
                           _ButtonConfig(
                             label: '0',
-                            color: Colors.grey.shade700,
+                            color: Colors.grey.shade600,
                             onTap: () => controller.digit('0'),
                             flex: 2,
                           ),
                           _ButtonConfig(
                             label: '.',
-                            color: Colors.grey.shade700,
+                            color: Colors.grey.shade600,
                             onTap: controller.decimalPoint,
                           ),
                           _ButtonConfig(
                             label: '⏎',
                             color: Colors.green.shade600,
                             onTap: controller.enter,
-                            fontSize: 20,
+                            fontSize: isSmallScreen ? 16 : 20,
                           ),
                           _ButtonConfig(
                             label: '+',
-                            color: Colors.orange,
+                            color: Colors.orange.shade700,
                             onTap: () => controller.operation('+'),
                           ),
                         ]),
 
-                        const SizedBox(height: 8),
+                        SizedBox(height: verticalSpacing),
 
                         // ROW 5: STACK + CONTROL + DOMAIN
                         _buildButtonRow([
@@ -180,19 +195,23 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
                 // DOMAIN OPS (scrollable if >8)
                 if (controller.currentOperations.isNotEmpty)
                   SizedBox(
-                    height: 100,
+                    height: domainOpsHeight,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: horizontalPadding),
                       itemCount: controller.currentOperations.length,
                       itemBuilder: (context, index) {
                         final op = controller.currentOperations[index];
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8),
+                          padding: EdgeInsets.only(
+                            right: isTinyScreen ? 6 : 8,
+                          ),
                           child: CalcButton(
                             label: op.label,
-                            size: 70,
-                            fontSize: 12,
+                            size: domainButtonSize,
+                            fontSize:
+                                isTinyScreen ? 10 : (isSmallScreen ? 11 : 12),
                             onTap: () => controller.executeDomainOp(op),
                           ),
                         );
