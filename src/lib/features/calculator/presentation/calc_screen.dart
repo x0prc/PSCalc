@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../application/calc_controller.dart';
 import 'widgets/calc_display.dart';
 import 'widgets/calc_button.dart';
+import 'settings_screen.dart';
 
 class CalcScreen extends StatefulWidget {
   const CalcScreen({super.key});
@@ -164,7 +165,7 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
 
                         SizedBox(height: verticalSpacing),
 
-                        // ROW 5: STACK + CONTROL + DOMAIN
+                        // ROW 5: STACK + CONTROL + DOMAIN + SETTINGS
                         _buildButtonRow([
                           _ButtonConfig(
                             label: 'R↓',
@@ -185,6 +186,15 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
                             label: '≡',
                             color: Colors.grey.shade800,
                             onTap: controller.toggleHistory,
+                          ),
+                          _ButtonConfig(
+                            label: '⚙️',
+                            color: Colors.grey.shade700,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SettingsScreen()),
+                            ),
                           ),
                         ]),
                       ],
