@@ -3,15 +3,37 @@ import 'package:decimal/decimal.dart';
 import '../domain/domain.dart';
 import '../../../core/engine/number.dart';
 import '../../../core/engine/rpn_engine.dart';
+import '../../../core/services/storage_service.dart';
 
 class CalcController extends ChangeNotifier {
-  // STATE
+  final StorageService _storage;
   final List<Domain> _allDomains;
   List<CalcNumber> _stack = [];
   String _inputBuffer = '';
   String? _pendingOp;
   int _currentDomainIndex = 0;
   bool _showHistory = false;
+
+  CalcController({
+    required StorageService storage,
+    required List<Domain> allDomains,
+  })  : _storage = storage,
+        _allDomains = allDomains {
+    _loadState();
+  }
+
+  void _loadState() {
+    _stack = _storage.loadStack(_stack);
+    _currentDomainIndex = _storage.loadCurrentDomainIndex(_currentDomainIndex);
+    if (_currentDomainIndex >= _allDomains.length) {
+      _currentDomainIndex = 0;
+    }
+  }
+
+  void _saveState() {
+    _storage.saveStack(_stack);
+    _storage.saveCurrentDomainIndex(_currentDomainIndex);
+  }
 
   // GETTERS
   List<CalcNumber> get stack => List.unmodifiable(_stack);
@@ -21,8 +43,6 @@ class CalcController extends ChangeNotifier {
   List<DomainOperation> get currentOperations => currentDomain.operations;
   CalcNumber get xRegister =>
       stack.isNotEmpty ? stack.last : CalcNumber(Decimal.zero);
-
-  CalcController({required List<Domain> allDomains}) : _allDomains = allDomains;
 
   // INPUT HANDLING
   void digit(String d) {
@@ -51,6 +71,7 @@ class CalcController extends ChangeNotifier {
         // Invalid input - ignore
       }
     }
+    _saveState();
     notifyListeners();
   }
 
@@ -71,12 +92,14 @@ class CalcController extends ChangeNotifier {
     _stack.clear();
     _inputBuffer = '';
     _pendingOp = null;
+    _saveState();
     notifyListeners();
   }
 
   // DOMAIN CYCLING
   void cycleDomain() {
     _currentDomainIndex = (_currentDomainIndex + 1) % _allDomains.length;
+    _saveState();
     notifyListeners();
   }
 
@@ -85,6 +108,7 @@ class CalcController extends ChangeNotifier {
   void previousDomain() {
     _currentDomainIndex = (_currentDomainIndex - 1) % _allDomains.length;
     if (_currentDomainIndex < 0) _currentDomainIndex = _allDomains.length - 1;
+    _saveState();
     notifyListeners();
   }
 
@@ -136,6 +160,7 @@ class CalcController extends ChangeNotifier {
     if (_stack.length >= 2) {
       final x = _stack.removeLast();
       _stack.insert(_stack.length - 1, x);
+      _saveState();
       notifyListeners();
     }
   }
@@ -144,6 +169,7 @@ class CalcController extends ChangeNotifier {
     if (_stack.isNotEmpty) {
       final x = _stack.last;
       _stack.add(x);
+      _saveState();
       notifyListeners();
     }
   }
@@ -154,6 +180,7 @@ class CalcController extends ChangeNotifier {
       final x = _stack.removeLast();
       _stack.add(x);
       _stack.add(y);
+      _saveState();
       notifyListeners();
     }
   }
@@ -168,6 +195,7 @@ class CalcController extends ChangeNotifier {
         _stack.add(CalcNumber(Decimal.parse('2.71828182845904523536')));
         break;
     }
+    _saveState();
     notifyListeners();
   }
 
@@ -181,6 +209,7 @@ class CalcController extends ChangeNotifier {
       final currentState = RpnStackState(stack: _stack);
       final result = op.execute(currentState);
       _stack = result.stack;
+      _saveState();
       notifyListeners();
     } catch (e) {
       debugPrint('Domain op error: $e');

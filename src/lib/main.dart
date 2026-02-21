@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'features/calculator/application/calc_controller.dart';
+import 'features/calculator/application/settings_controller.dart';
 import 'features/calculator/domain/basic_domain.dart';
 import 'features/calculator/domain/business_domain.dart';
 import 'features/calculator/domain/finance_domain.dart';
@@ -12,38 +13,59 @@ import 'features/calculator/domain/cs_domain.dart';
 import 'features/calculator/domain/nav_domain.dart';
 import 'features/calculator/domain/jewellery_domain.dart';
 import 'features/calculator/domain/construction_domain.dart';
-// import 'features/calculator/domain/trekking_domain.dart';  // TODO: Create this file
+import 'core/services/storage_service.dart';
 import 'features/calculator/presentation/calc_screen.dart';
 
-void main() {
-  runApp(const PSCalcApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final storage = StorageService();
+  await storage.init();
+
+  final allDomains = [
+    BasicDomain(),
+    BusinessDomain(),
+    FinanceDomain(),
+    FxDomain(),
+    RealEstateDomain(),
+    InvestmentDomain(),
+    DateDomain(),
+    CsDomain(),
+    NavDomain(),
+    JewelleryDomain(),
+    ConstructionDomain(),
+  ];
+
+  runApp(PSCalcApp(
+    storage: storage,
+    allDomains: allDomains,
+  ));
 }
 
 class PSCalcApp extends StatelessWidget {
-  const PSCalcApp({super.key});
+  final StorageService storage;
+  final List<dynamic> allDomains;
+
+  const PSCalcApp({
+    super.key,
+    required this.storage,
+    required this.allDomains,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => CalcController(
-        allDomains: [
-          // CORE DOMAINS
-          BasicDomain(),
-          BusinessDomain(),
-          FinanceDomain(),
-          FxDomain(),
-          RealEstateDomain(),
-          InvestmentDomain(),
-          DateDomain(),
-
-          // SPECIALIZED
-          CsDomain(),
-          NavDomain(),
-          JewelleryDomain(),
-          ConstructionDomain(),
-          // TrekkingDomain(),  // TODO: Create this domain
-        ],
-      ),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => SettingsController(storage),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CalcController(
+            storage: storage,
+            allDomains: allDomains.cast(),
+          ),
+        ),
+      ],
       child: MaterialApp(
         title: 'PSCalc',
         theme: ThemeData(
