@@ -16,68 +16,86 @@ class FinanceDomain implements Domain {
 
   @override
   List<DomainOperation> get operations => [
-    EmiOp(),
-    NpvOp(),
-    RoiOp(),
-    FutureValueOp(),
-    AnnuityPmtOp(),
-  ];
+        EmiOp(),
+        NpvOp(),
+        RoiOp(),
+        FutureValueOp(),
+        AnnuityPmtOp(),
+      ];
 }
 
-///--------------------------------------------- EMI (Equated Monthly Installment) ----------------------------------------------------------------------------------------------
 class EmiOp implements DomainOperation {
-  @override String get id => 'emi'; 
-  @override String get label => 'EMI'; 
-  @override int get arity => 3;
-  @override String? get description => 'EMI (P r% N → EMI)';
+  @override
+  String get id => 'emi';
+  @override
+  String get label => 'EMI';
+  @override
+  int get arity => 3;
+  @override
+  String? get description => 'EMI (P r% N → EMI)';
 
   @override
   RpnStackState execute(RpnStackState state) {
     final newStack = List<CalcNumber>.from(state.stack);
-    final years = newStack.removeLast().value.toDouble().toInt() * 12; // months
-    final annualRate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
+    final years = newStack.removeLast().value.toDouble().toInt() * 12;
+    final annualRate =
+        (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
     final principal = newStack.removeLast().value;
-    
+
     final monthlyRate = (annualRate / Decimal.fromInt(12)).toDecimal();
-    final power = pow(1 + monthlyRate.toDouble(), years.toDouble());
-    final emi = (principal * monthlyRate * Decimal.parse(power.toString()) /
-                (Decimal.parse(power.toString()) - Decimal.one)).toDecimal();
-    
+    final rateDouble = monthlyRate.toDouble();
+    final power = pow(1 + rateDouble, years.toDouble());
+    final powerDec = Decimal.parse(power.toString());
+    final emi = (principal * monthlyRate * powerDec / (powerDec - Decimal.one))
+        .toDecimal();
+
     newStack.add(CalcNumber(emi));
     return state.copyWith(stack: newStack);
   }
 }
 
-///--------------------------------------------- NPV (Net Present Value) ----------------------------------------------------------------------------------------------
 class NpvOp implements DomainOperation {
-  @override String get id => 'npv'; 
-  @override String get label => 'NPV'; 
-  @override int get arity => -1; // variable
-  @override String? get description => 'NPV (r CFs → NPV)';
+  @override
+  String get id => 'npv';
+  @override
+  String get label => 'NPV';
+  @override
+  int get arity => -1;
+  @override
+  String? get description => 'NPV (r CFs → NPV)';
 
   @override
   RpnStackState execute(RpnStackState state) {
-    if (state.stack.length < 2) throw Exception('Need rate + cashflows');
     final newStack = List<CalcNumber>.from(state.stack);
-    final rate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
-    
+    if (newStack.length < 2) throw Exception('Need rate + cashflows');
+    final rate =
+        (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
+    final rateDouble = rate.toDouble();
+
     Decimal npv = Decimal.zero;
+    int period = 1;
     while (newStack.isNotEmpty) {
       final cf = newStack.removeLast().value;
-      npv = npv + (cf / Decimal.parse(pow(1 + rate.toDouble(), newStack.length.toDouble() + 1).toString())).toDecimal();
+      final discountFactor =
+          Decimal.parse(pow(1 + rateDouble, period).toString());
+      npv = npv + (cf / discountFactor).toDecimal();
+      period++;
     }
-    
+
     newStack.add(CalcNumber(npv));
     return state.copyWith(stack: newStack);
   }
 }
 
-///--------------------------------------------- ROI (Return on Investment) ----------------------------------------------------------------------------------------------
 class RoiOp implements DomainOperation {
-  @override String get id => 'roi'; 
-  @override String get label => 'ROI%'; 
-  @override int get arity => 2;
-  @override String? get description => 'ROI % (Gain Invest → %)';
+  @override
+  String get id => 'roi';
+  @override
+  String get label => 'ROI%';
+  @override
+  int get arity => 2;
+  @override
+  String? get description => 'ROI % (Gain Invest → %)';
 
   @override
   RpnStackState execute(RpnStackState state) {
@@ -91,47 +109,62 @@ class RoiOp implements DomainOperation {
   }
 }
 
-///--------------------------------------------- FV (Future Value) ----------------------------------------------------------------------------------------------
 class FutureValueOp implements DomainOperation {
-  @override String get id => 'fv'; 
-  @override String get label => 'FV'; 
-  @override int get arity => 3;
-  @override String? get description => 'Future value (Pmt r N → FV)';
+  @override
+  String get id => 'fv';
+  @override
+  String get label => 'FV';
+  @override
+  int get arity => 3;
+  @override
+  String? get description => 'Future value (Pmt r N → FV)';
 
   @override
   RpnStackState execute(RpnStackState state) {
     final newStack = List<CalcNumber>.from(state.stack);
     final periods = newStack.removeLast().value.toDouble().toInt();
-    final rate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
+    final rate =
+        (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
     final pmt = newStack.removeLast().value;
-    
-    Decimal fv = Decimal.zero;
-    for (int i = 0; i < periods; i++) {
-      fv = fv * (Decimal.one + rate) + pmt;
+
+    if (periods <= 0) {
+      newStack.add(CalcNumber(pmt));
+      return state.copyWith(stack: newStack);
     }
+
+    final rateDouble = rate.toDouble();
+    final power = pow(1 + rateDouble, periods.toDouble());
+    final powerDec = Decimal.parse(power.toString());
+    final fv = (pmt * (powerDec - Decimal.one) / rate).toDecimal();
+
     newStack.add(CalcNumber(fv));
     return state.copyWith(stack: newStack);
   }
 }
 
-///--------------------------------------------- Annuity Payment ----------------------------------------------------------------------------------------------
 class AnnuityPmtOp implements DomainOperation {
-  @override String get id => 'pmt'; 
-  @override String get label => 'PMT'; 
-  @override int get arity => 3;
-  @override String? get description => 'Annuity payment (PV r N → Pmt)';
+  @override
+  String get id => 'pmt';
+  @override
+  String get label => 'PMT';
+  @override
+  int get arity => 3;
+  @override
+  String? get description => 'Annuity payment (PV r N → Pmt)';
 
   @override
   RpnStackState execute(RpnStackState state) {
     final newStack = List<CalcNumber>.from(state.stack);
     final periods = newStack.removeLast().value.toDouble().toInt();
-    final rate = (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
+    final rate =
+        (newStack.removeLast().value / Decimal.fromInt(100)).toDecimal();
     final pv = newStack.removeLast().value;
-    
-    final power = pow(1 + rate.toDouble(), periods.toDouble());
-    final pmt = (pv * rate * Decimal.parse(power.toString()) /
-                (Decimal.parse(power.toString()) - Decimal.one)).toDecimal();
-    
+
+    final rateDouble = rate.toDouble();
+    final power = pow(1 + rateDouble, periods.toDouble());
+    final powerDec = Decimal.parse(power.toString());
+    final pmt = (pv * rate * powerDec / (powerDec - Decimal.one)).toDecimal();
+
     newStack.add(CalcNumber(pmt));
     return state.copyWith(stack: newStack);
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:decimal/decimal.dart';
 import '../domain/domain.dart';
@@ -6,6 +7,11 @@ import '../../../core/engine/rpn_engine.dart';
 import '../../../core/services/storage_service.dart';
 
 class CalcController extends ChangeNotifier {
+  static const int _maxStackSize = 50;
+  static const int _maxInputLength = 20;
+  static const Duration _saveDebounce = Duration(milliseconds: 500);
+  static const Duration _notifyThrottle = Duration(milliseconds: 16);
+
   final StorageService _storage;
   final List<Domain> _allDomains;
   List<CalcNumber> _stack = [];
@@ -13,6 +19,11 @@ class CalcController extends ChangeNotifier {
   String? _pendingOp;
   int _currentDomainIndex = 0;
   bool _showHistory = false;
+
+  Timer? _saveTimer;
+  Timer? _notifyTimer;
+  bool _pendingNotify = false;
+  bool _pendingSave = false;
 
   CalcController({
     required StorageService storage,
@@ -22,17 +33,49 @@ class CalcController extends ChangeNotifier {
     _loadState();
   }
 
+  @override
+  void dispose() {
+    _saveTimer?.cancel();
+    _notifyTimer?.cancel();
+    _flushSave();
+    super.dispose();
+  }
+
   void _loadState() {
     _stack = _storage.loadStack(_stack);
+    if (_stack.length > _maxStackSize) {
+      _stack = _stack.sublist(_stack.length - _maxStackSize);
+    }
     _currentDomainIndex = _storage.loadCurrentDomainIndex(_currentDomainIndex);
     if (_currentDomainIndex >= _allDomains.length) {
       _currentDomainIndex = 0;
     }
   }
 
-  void _saveState() {
-    _storage.saveStack(_stack);
-    _storage.saveCurrentDomainIndex(_currentDomainIndex);
+  void _scheduleSave() {
+    _pendingSave = true;
+    _saveTimer?.cancel();
+    _saveTimer = Timer(_saveDebounce, () {
+      _flushSave();
+    });
+  }
+
+  void _flushSave() {
+    if (_pendingSave) {
+      _storage.saveStack(_stack);
+      _storage.saveCurrentDomainIndex(_currentDomainIndex);
+      _pendingSave = false;
+    }
+  }
+
+  void _throttledNotify() {
+    if (_pendingNotify) return;
+    _pendingNotify = true;
+    _notifyTimer?.cancel();
+    _notifyTimer = Timer(_notifyThrottle, () {
+      notifyListeners();
+      _pendingNotify = false;
+    });
   }
 
   // GETTERS
@@ -46,17 +89,16 @@ class CalcController extends ChangeNotifier {
 
   // INPUT HANDLING
   void digit(String d) {
-    if (_inputBuffer.length < 16) {
-      // Prevent overflow
+    if (_inputBuffer.length < _maxInputLength) {
       _inputBuffer += d;
-      notifyListeners();
+      _throttledNotify();
     }
   }
 
   void decimalPoint() {
     if (_inputBuffer.isEmpty || !_inputBuffer.contains('.')) {
       _inputBuffer += '.';
-      notifyListeners();
+      _throttledNotify();
     }
   }
 
@@ -64,14 +106,18 @@ class CalcController extends ChangeNotifier {
     if (_inputBuffer.isNotEmpty) {
       try {
         final num = Decimal.parse(_inputBuffer);
-        _stack.add(CalcNumber(num));
+        final cn = CalcNumber(num);
+        if (_stack.length >= _maxStackSize) {
+          _stack.removeAt(0);
+        }
+        _stack.add(cn);
         _inputBuffer = '';
         _executePending();
       } catch (e) {
         // Invalid input - ignore
       }
     }
-    _saveState();
+    _scheduleSave();
     notifyListeners();
   }
 
@@ -84,7 +130,7 @@ class CalcController extends ChangeNotifier {
   void backspace() {
     if (_inputBuffer.isNotEmpty) {
       _inputBuffer = _inputBuffer.substring(0, _inputBuffer.length - 1);
-      notifyListeners();
+      _throttledNotify();
     }
   }
 
@@ -92,14 +138,14 @@ class CalcController extends ChangeNotifier {
     _stack.clear();
     _inputBuffer = '';
     _pendingOp = null;
-    _saveState();
+    _scheduleSave();
     notifyListeners();
   }
 
   // DOMAIN CYCLING
   void cycleDomain() {
     _currentDomainIndex = (_currentDomainIndex + 1) % _allDomains.length;
-    _saveState();
+    _scheduleSave();
     notifyListeners();
   }
 
@@ -108,7 +154,7 @@ class CalcController extends ChangeNotifier {
   void previousDomain() {
     _currentDomainIndex = (_currentDomainIndex - 1) % _allDomains.length;
     if (_currentDomainIndex < 0) _currentDomainIndex = _allDomains.length - 1;
-    _saveState();
+    _scheduleSave();
     notifyListeners();
   }
 
@@ -148,7 +194,6 @@ class CalcController extends ChangeNotifier {
         _stack.add(CalcNumber(result));
         _pendingOp = null;
       } catch (e) {
-        // Error - restore stack
         _stack.add(a);
         _stack.add(b);
       }
@@ -160,7 +205,7 @@ class CalcController extends ChangeNotifier {
     if (_stack.length >= 2) {
       final x = _stack.removeLast();
       _stack.insert(_stack.length - 1, x);
-      _saveState();
+      _scheduleSave();
       notifyListeners();
     }
   }
@@ -168,8 +213,10 @@ class CalcController extends ChangeNotifier {
   void dup() {
     if (_stack.isNotEmpty) {
       final x = _stack.last;
-      _stack.add(x);
-      _saveState();
+      if (_stack.length < _maxStackSize) {
+        _stack.add(x);
+      }
+      _scheduleSave();
       notifyListeners();
     }
   }
@@ -180,7 +227,7 @@ class CalcController extends ChangeNotifier {
       final x = _stack.removeLast();
       _stack.add(x);
       _stack.add(y);
-      _saveState();
+      _scheduleSave();
       notifyListeners();
     }
   }
@@ -195,7 +242,7 @@ class CalcController extends ChangeNotifier {
         _stack.add(CalcNumber(Decimal.parse('2.71828182845904523536')));
         break;
     }
-    _saveState();
+    _scheduleSave();
     notifyListeners();
   }
 
@@ -208,8 +255,12 @@ class CalcController extends ChangeNotifier {
     try {
       final currentState = RpnStackState(stack: _stack);
       final result = op.execute(currentState);
-      _stack = result.stack;
-      _saveState();
+      if (result.stack.length > _maxStackSize) {
+        _stack = result.stack.sublist(result.stack.length - _maxStackSize);
+      } else {
+        _stack = result.stack;
+      }
+      _scheduleSave();
       notifyListeners();
     } catch (e) {
       debugPrint('Domain op error: $e');

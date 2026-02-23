@@ -13,17 +13,23 @@ class RpnStackState {
 }
 
 class RpnEngine {
+  static const int _maxHistorySize = 50;
+
   RpnStackState _state = RpnStackState();
   final List<RpnStackState> _history = [];
 
   RpnStackState get state => _state;
-  
+
   void set state(RpnStackState value) {
     _state = value;
   }
 
-  /// Save current state before mutation.
-  void _save() => _history.add(state.copyWith());
+  void _save() {
+    _history.add(state.copyWith());
+    while (_history.length > _maxHistorySize) {
+      _history.removeAt(0);
+    }
+  }
 
   void clear() {
     _save();
@@ -32,18 +38,16 @@ class RpnEngine {
 
   void pushNumber(CalcNumber n) {
     _save();
-    final newStack = List<CalcNumber>.from(state.stack)..add(n);
-    state = state.copyWith(stack: newStack);
+    _state.stack.add(n);
   }
 
   void applyOp(RpnOp op) {
-    if (state.stack.length < 2) {
+    if (_state.stack.length < 2) {
       throw CalcError.stackUnderflow();
     }
     _save();
-    final newStack = List<CalcNumber>.from(state.stack);
-    final b = newStack.removeLast();
-    final a = newStack.removeLast();
+    final b = _state.stack.removeLast();
+    final a = _state.stack.removeLast();
     CalcNumber res;
     switch (op) {
       case RpnOp.add:
@@ -59,45 +63,39 @@ class RpnEngine {
         res = a / b;
         break;
     }
-    newStack.add(res);
-    state = state.copyWith(stack: newStack);
+    _state.stack.add(res);
   }
 
   void undo() {
     if (_history.isNotEmpty) {
-      state = _history.removeLast();
+      _state = _history.removeLast();
     }
   }
 
-  // Basic stack manipulation
   void swap() {
-    if (state.stack.length < 2) {
+    if (_state.stack.length < 2) {
       throw CalcError.stackUnderflow();
     }
     _save();
-    final newStack = List<CalcNumber>.from(state.stack);
-    final temp = newStack.removeLast();
-    newStack.add(newStack.removeLast());
-    newStack.add(temp);
-    state = state.copyWith(stack: newStack);
+    final last = _state.stack.length - 1;
+    final temp = _state.stack[last];
+    _state.stack[last] = _state.stack[last - 1];
+    _state.stack[last - 1] = temp;
   }
 
   void drop() {
-    if (state.stack.isEmpty) {
+    if (_state.stack.isEmpty) {
       throw CalcError.stackUnderflow();
     }
     _save();
-    final newStack = List<CalcNumber>.from(state.stack)..removeLast();
-    state = state.copyWith(stack: newStack);
+    _state.stack.removeLast();
   }
 
   void dup() {
-    if (state.stack.isEmpty) {
+    if (_state.stack.isEmpty) {
       throw CalcError.stackUnderflow();
     }
     _save();
-    final newStack = List<CalcNumber>.from(state.stack)
-      ..add(state.stack.last);
-    state = state.copyWith(stack: newStack);
+    _state.stack.add(_state.stack.last);
   }
 }
