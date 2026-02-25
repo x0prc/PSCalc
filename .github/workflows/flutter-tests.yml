@@ -1,0 +1,44 @@
+name: Flutter Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Flutter Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: |
+          cd src
+          flutter pub get
+
+      - name: Run Flutter analyze
+        run: |
+          cd src
+          flutter analyze --no-pub
+
+      - name: Run Flutter tests
+        run: |
+          cd src
+          flutter test --no-pub
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: src/test_results/
