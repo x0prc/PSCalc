@@ -20,16 +20,15 @@ class CalcDisplay extends StatelessWidget {
         children: [
           // DOMAIN LABEL
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.purple.shade800,
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.purple.shade700,
             ),
             child: Text(
               controller.currentDomain.shortLabel,
               style: GoogleFonts.robotoCondensed(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
               ),
