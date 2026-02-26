@@ -20,12 +20,12 @@ class RpnEngine {
 
   RpnStackState get state => _state;
 
-  void set state(RpnStackState value) {
+  void updateState(RpnStackState value) {
     _state = value;
   }
 
   void _save() {
-    _history.add(state.copyWith());
+    _history.add(_state.copyWith());
     while (_history.length > _maxHistorySize) {
       _history.removeAt(0);
     }
@@ -33,7 +33,7 @@ class RpnEngine {
 
   void clear() {
     _save();
-    state = RpnStackState();
+    _state = RpnStackState();
   }
 
   void pushNumber(CalcNumber n) {

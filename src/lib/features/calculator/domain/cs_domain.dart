@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:decimal/decimal.dart';
 import '../../../core/engine/number.dart';
 import '../../../core/engine/rpn_engine.dart';
 import 'domain.dart';

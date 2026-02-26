@@ -49,14 +49,13 @@ class AlgebraicEngine {
     }
     return tokens;
   }
+
   static final Map<String, int> _precedence = {
     '+': 1,
     '-': 1,
     '*': 2,
     '/': 2,
   };
-
-  static bool _isOp(String c) => '+-*/'.contains(c);
 
   List<Token> _toRpn(List<Token> tokens) {
     final output = <Token>[];

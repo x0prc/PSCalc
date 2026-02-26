@@ -14,7 +14,6 @@ class CalcScreen extends StatefulWidget {
 
 class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
   late AnimationController _pressController;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -22,9 +21,6 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
     _pressController = AnimationController(
       duration: const Duration(milliseconds: 100),
       vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
     );
   }
 
@@ -248,7 +244,6 @@ class _CalcScreenState extends State<CalcScreen> with TickerProviderStateMixin {
                   color: config.color,
                   fontSize: config.fontSize ?? 24,
                   onTap: config.onTap,
-                  onLongPress: config.onLongPress,
                 ),
               ),
             )
@@ -262,7 +257,6 @@ class _ButtonConfig {
   final String label;
   final Color? color;
   final VoidCallback? onTap;
-  final VoidCallback? onLongPress;
   final double? fontSize;
   final int? flex;
 
@@ -270,7 +264,6 @@ class _ButtonConfig {
     required this.label,
     this.onTap,
     this.color,
-    this.onLongPress,
     this.fontSize,
     this.flex,
   });
